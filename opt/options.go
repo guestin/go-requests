@@ -213,3 +213,12 @@ func BindJSON(value interface{}) Option {
 func BindXML(value interface{}) Option {
 	return DataBind(xml.Unmarshal, value)
 }
+
+// edit http request
+func EditRequest(f CustomRequestHandleFunc) Option {
+	return func(requestContext *RequestContext) error {
+		requestContext.CustomHttpRequestHandlers =
+			append(requestContext.CustomHttpRequestHandlers, f)
+		return nil
+	}
+}
