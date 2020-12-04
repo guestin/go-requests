@@ -4,6 +4,12 @@
 
 ![gopher](https://golang.google.cn/lib/godoc/images/footer-gopher.jpg)
 
+![go report](https://goreportcard.com/badge/github.com/guestin/go-requests)
+![license](https://img.shields.io/badge/license-MIT-brightgreen.svg)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/guestin/go-requests)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](https://github.com/guestin/go-requests/pulls)
+[![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/guestin/go-requests/issues)
+
 ## Get Start 🚀
 
 ### Install 📦
@@ -98,5 +104,5 @@ func TestGetScope(t *testing.T) {
 
 ## License
 
-MIT
+Released under the [MIT License](https://github.com/guestin/go-requests/blob/master/License)
 
