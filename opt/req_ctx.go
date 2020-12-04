@@ -16,7 +16,6 @@ type RequestContext struct {
 	ExecuteClient             *http.Client              // default: http.DefaultClient
 	Url                       string                    // request url
 	Method                    string                    // http method,default: http.MethodGet
-	Headers                   http.Header               // request header
 	ResponseStatusHandler     StatusHandleFunc          // default: always return nil
 	LazyRequestBodyHandler    func() (io.Reader, error) // lazy eval body provider
 	ResponseHandler           ResponseHandleFunc        // default: nil, return interface{} -> []byte
@@ -42,17 +41,6 @@ func (this *RequestContext) BuildRequest() (*http.Request, error) {
 		bodyReader)
 	if err != nil {
 		return nil, err
-	}
-	// migrate headers
-	for k, v := range this.Headers {
-		vLen := len(v)
-		if vLen == 1 {
-			request.Header.Set(k, v[0])
-		} else if vLen > 1 {
-			for _, vIt := range v {
-				request.Header.Add(k, vIt)
-			}
-		}
 	}
 	// invoke custom request handlers
 	for _, customReqHandler := range this.CustomHttpRequestHandlers {

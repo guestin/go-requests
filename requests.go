@@ -43,7 +43,6 @@ var defaultRequestParams = opt.RequestContext{
 	Ctx:           context.TODO(),
 	ExecuteClient: http.DefaultClient,
 	Method:        http.MethodGet,
-	Headers:       nil,
 	ResponseStatusHandler: func(statusCode int) error {
 		return nil
 	},

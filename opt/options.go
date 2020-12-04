@@ -16,34 +16,20 @@ import (
 
 // append header
 func AddHeader(key string, values ...string) Option {
-	return Header(false, key, values...)
+	return EditRequest(func(req *http.Request) error {
+		for _, it := range values {
+			req.Header.Add(key, it)
+		}
+		return nil
+	})
 }
 
 // set header
-func SetHeader(key string, values ...string) Option {
-	return Header(true, key, values...)
-}
-
-// modify http header
-func Header(override bool, key string, values ...string) Option {
-	return func(options *RequestContext) error {
-		if options.Headers == nil {
-			options.Headers = make(http.Header)
-		}
-		if len(values) == 0 {
-			values = []string{""}
-		}
-		var headerModifyFunc func(k, v string)
-		if override {
-			headerModifyFunc = options.Headers.Set
-		} else {
-			headerModifyFunc = options.Headers.Add
-		}
-		for _, it := range values {
-			headerModifyFunc(key, it)
-		}
+func SetHeader(key string, value string) Option {
+	return EditRequest(func(req *http.Request) error {
+		req.Header.Set(key, value)
 		return nil
-	}
+	})
 }
 
 // assign http method, INTERNAL API WARNING!
@@ -126,7 +112,7 @@ func Defer(cb ...func()) Option {
 
 // content type
 func ContentType(contentType string) Option {
-	return Header(true, "Content-Type", contentType)
+	return SetHeader("Content-Type", contentType)
 }
 
 // body with json contents
