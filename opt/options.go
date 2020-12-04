@@ -176,7 +176,7 @@ func ValidateStruct(validIns mvalidate.Validator) Option {
 }
 
 // custom validator func
-func CustomValidator(validateFunc ValidateHandler) Option {
+func CustomValidator(validateFunc ValidateHandleFunc) Option {
 	return func(options *RequestContext) error {
 		options.ValidateFunc = validateFunc
 		return nil

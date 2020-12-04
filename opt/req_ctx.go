@@ -7,7 +7,7 @@ import (
 )
 
 type ResponseHandleFunc func(statusCode int, stream io.Reader) (interface{}, error)
-type ValidateHandler func(interface{}) error
+type ValidateHandleFunc func(interface{}) error
 type StatusHandleFunc func(statusCode int) error
 
 type RequestContext struct {
@@ -32,6 +32,7 @@ func (this *RequestContext) BuildRequest() (*http.Request, error) {
 			return nil, err
 		}
 	}
+	// create newly http.Request
 	request, err := http.NewRequestWithContext(
 		this.Ctx,
 		this.Method,
@@ -40,6 +41,7 @@ func (this *RequestContext) BuildRequest() (*http.Request, error) {
 	if err != nil {
 		return nil, err
 	}
+	// migrate headers
 	for k, v := range this.Headers {
 		vLen := len(v)
 		if vLen == 1 {
