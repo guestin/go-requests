@@ -169,6 +169,16 @@ func CustomValidator(validateFunc ValidateHandleFunc) Option {
 	}
 }
 
+// drop response body, response value is status_code
+func DropResponseBody() Option {
+	return func(options *RequestContext) error {
+		options.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
+			return statusCode, nil
+		}
+		return nil
+	}
+}
+
 // unmarshal func
 type UnmarshalFunc func([]byte, interface{}) error
 
