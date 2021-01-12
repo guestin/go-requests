@@ -2,8 +2,8 @@ package requests
 
 import (
 	"context"
+	"github.com/guestin/go-requests/requests/opt"
 	"github.com/guestin/mob/mio"
-	"github.com/guestin/requests/opt"
 	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
