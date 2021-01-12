@@ -15,7 +15,7 @@
 ### Install 📦
 
 ```bash
-go get -u "https://github.com/guestin/go-requests" latest
+go get -u "github.com/guestin/go-requests" latest
 ```
 
 ### Usage
