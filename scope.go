@@ -1,6 +1,6 @@
 package requests
 
-import "github.com/guestin/go-requests/requests/opt"
+import "github.com/guestin/go-requests/opt"
 
 type Scope []opt.Option
 

@@ -2,7 +2,7 @@ package requests
 
 import (
 	"context"
-	"github.com/guestin/go-requests/requests/opt"
+	"github.com/guestin/go-requests/opt"
 	"github.com/guestin/mob/murl"
 	"github.com/guestin/mob/mvalidate"
 

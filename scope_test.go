@@ -1,7 +1,7 @@
 package requests
 
 import (
-	"github.com/guestin/go-requests/requests/opt"
+	"github.com/guestin/go-requests/opt"
 	"github.com/guestin/mob/murl"
 	"github.com/stretchr/testify/assert"
 	"net/http"

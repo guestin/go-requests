@@ -1,4 +1,4 @@
-module github.com/guestin/go-requests/requests
+module github.com/guestin/go-requests
 
 go 1.14
 
