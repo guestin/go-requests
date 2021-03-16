@@ -223,7 +223,7 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 }
 
 // output: nWrite: int64
-func SaveToFile(fileName string, flag int, perm os.FileMode) Option {
+func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	return func(reqCtx *RequestContext) error {
 		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
 			if statusCode != http.StatusOK {
@@ -245,7 +245,7 @@ func SaveToFile(fileName string, flag int, perm os.FileMode) Option {
 }
 
 // output: nWrite: int64
-func DumpResponseBody(output io.Writer) Option {
+func ResponseBodyDump(output io.Writer) Option {
 	return func(reqCtx *RequestContext) error {
 		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
 			if statusCode != http.StatusOK {
