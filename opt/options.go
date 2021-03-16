@@ -6,12 +6,15 @@ import (
 	"encoding/json"
 	"encoding/xml"
 	"github.com/go-playground/validator/v10"
+	"github.com/guestin/mob/merrors"
+	"github.com/guestin/mob/mio"
 	"github.com/guestin/mob/murl"
 	"github.com/guestin/mob/mvalidate"
 	"github.com/pkg/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
+	"os"
 )
 
 // append header
@@ -215,6 +218,45 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 	return func(requestContext *RequestContext) error {
 		requestContext.CustomHttpRequestHandlers =
 			append(requestContext.CustomHttpRequestHandlers, f)
+		return nil
+	}
+}
+
+// output: nWrite: int64
+func SaveToFile(fileName string, flag int, perm os.FileMode) Option {
+	return func(reqCtx *RequestContext) error {
+		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
+			if statusCode != http.StatusOK {
+				return nil, merrors.Errorf("bad status code:%d", statusCode)
+			}
+			output, err := os.OpenFile(fileName, flag, perm)
+			if err != nil {
+				return nil, err
+			}
+			defer mio.CloseIgnoreErr(output)
+			nWrite, err := io.Copy(output, stream)
+			if err != nil {
+				return nil, err
+			}
+			return nWrite, nil
+		}
+		return nil
+	}
+}
+
+// output: nWrite: int64
+func DumpResponseBody(output io.Writer) Option {
+	return func(reqCtx *RequestContext) error {
+		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
+			if statusCode != http.StatusOK {
+				return nil, merrors.Errorf("bad status code:%d", statusCode)
+			}
+			nWrite, err := io.Copy(output, stream)
+			if err != nil {
+				return nil, err
+			}
+			return nWrite, nil
+		}
 		return nil
 	}
 }
