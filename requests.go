@@ -5,8 +5,6 @@ import (
 	"github.com/guestin/go-requests/opt"
 	"github.com/guestin/mob/mio"
 	"github.com/pkg/errors"
-	"io"
-	"io/ioutil"
 	"net/http"
 )
 
@@ -43,17 +41,6 @@ var defaultRequestParams = opt.RequestContext{
 	Ctx:           context.TODO(),
 	ExecuteClient: http.DefaultClient,
 	Method:        http.MethodGet,
-	ResponseStatusHandler: func(statusCode int) error {
-		return nil
-	},
-	LazyRequestBodyHandler: nil,
-	ResponseHandler: func(_ int, stream io.Reader) (interface{}, error) {
-		dataBytes, err := ioutil.ReadAll(stream)
-		if err != nil {
-			return nil, err
-		}
-		return string(dataBytes), nil
-	},
 }
 
 var ErrNoExecuteClient = errors.New("no http client provide")
@@ -78,7 +65,7 @@ func SendRequest1(opts []opt.Option) (interface{}, error) {
 		return nil, ErrNoExecuteClient
 	}
 	defer func() {
-		for _, deferFunc := range reqParam.AfterRequestHandlers {
+		for _, deferFunc := range reqParam.DeferHandlers {
 			deferFunc()
 		}
 	}()
@@ -88,22 +75,9 @@ func SendRequest1(opts []opt.Option) (interface{}, error) {
 	}
 	defer mio.CloseIgnoreErr(httpResp.Body)
 	statusCode := httpResp.StatusCode
-	if reqParam.ResponseStatusHandler != nil {
-		err = reqParam.ResponseStatusHandler(statusCode)
-		if err != nil {
-			return nil, err
-		}
+	rspHandler := reqParam.BuildResponseHandler()
+	if rspHandler == nil {
+		return statusCode, nil
 	}
-	outV, err := reqParam.ResponseHandler(statusCode, httpResp.Body)
-	if err != nil {
-		return nil, err
-	}
-	if reqParam.ValidateFunc != nil {
-		err = reqParam.ValidateFunc(outV)
-		if err != nil {
-			// validate error
-			return nil, err
-		}
-	}
-	return outV, nil
+	return rspHandler(statusCode, httpResp.Body, nil)
 }

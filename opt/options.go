@@ -12,7 +12,6 @@ import (
 	"github.com/guestin/mob/mvalidate"
 	"github.com/pkg/errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 )
@@ -54,17 +53,17 @@ func BindContext(ctx context.Context) Option {
 // expect http response code,default is 200
 func ExpectStatusCode(statusCodes ...int) Option {
 	return func(options *RequestContext) error {
-		options.ResponseStatusHandler = func(statusCode int) error {
+		options.InstallResponseHandler(func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
 			if len(statusCodes) == 0 {
-				return nil
+				return nil, nil
 			}
 			for _, it := range statusCodes {
 				if statusCode == it {
-					return nil
+					return nil, nil
 				}
 			}
-			return errors.Errorf("unexpect status code:%d", statusCode)
-		}
+			return nil, errors.Errorf("unexpect status code:%d", statusCode)
+		}, HEAD)
 		return nil
 	}
 }
@@ -107,8 +106,8 @@ func Body(reader io.Reader) Option {
 // add some defer function after request done
 func Defer(cb ...func()) Option {
 	return func(options *RequestContext) error {
-		options.AfterRequestHandlers =
-			append(options.AfterRequestHandlers, cb...)
+		options.DeferHandlers =
+			append(options.DeferHandlers, cb...)
 		return nil
 	}
 }
@@ -167,17 +166,30 @@ func ValidateStruct(validIns mvalidate.Validator) Option {
 // custom validator func
 func CustomValidator(validateFunc ValidateHandleFunc) Option {
 	return func(options *RequestContext) error {
-		options.ValidateFunc = validateFunc
+		options.InstallResponseHandler(
+			func(statusCode int,
+				stream io.Reader,
+				previousValue interface{}) (interface{}, error) {
+				if previousValue == nil {
+					return nil, nil
+				}
+				if err := validateFunc(previousValue); err != nil {
+					return nil, err
+				}
+				return previousValue, nil
+			}, TAIL)
 		return nil
 	}
+
 }
 
 // drop response body, response value is status_code
 func DropResponseBody() Option {
 	return func(options *RequestContext) error {
-		options.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
-			return statusCode, nil
-		}
+		options.InstallResponseHandler(
+			func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+				return statusCode, nil
+			}, PROC)
 		return nil
 	}
 }
@@ -188,8 +200,8 @@ type UnmarshalFunc func([]byte, interface{}) error
 // response data binder
 func DataBind(unmarshal UnmarshalFunc, value interface{}) Option {
 	return func(options *RequestContext) error {
-		options.ResponseHandler = func(_ int, stream io.Reader) (interface{}, error) {
-			dataBytes, err := ioutil.ReadAll(stream)
+		options.InstallResponseHandler(func(_ int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+			dataBytes, err := io.ReadAll(stream)
 			if err != nil {
 				return nil, errors.Wrap(err, "read response stream failed")
 			}
@@ -198,7 +210,7 @@ func DataBind(unmarshal UnmarshalFunc, value interface{}) Option {
 				return nil, errors.Wrap(err, "unmarshal response data failed")
 			}
 			return value, nil
-		}
+		}, PROC)
 		return nil
 	}
 }
@@ -225,7 +237,7 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 // output: nWrite: int64
 func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	return func(reqCtx *RequestContext) error {
-		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
+		reqCtx.InstallResponseHandler(func(statusCode int, stream io.Reader, _ interface{}) (interface{}, error) {
 			if statusCode != http.StatusOK {
 				return nil, merrors.Errorf("bad status code:%d", statusCode)
 			}
@@ -239,7 +251,7 @@ func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 				return nil, err
 			}
 			return nWrite, nil
-		}
+		}, PROC)
 		return nil
 	}
 }
@@ -247,7 +259,7 @@ func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 // output: nWrite: int64
 func ResponseBodyDump(output io.Writer) Option {
 	return func(reqCtx *RequestContext) error {
-		reqCtx.ResponseHandler = func(statusCode int, stream io.Reader) (interface{}, error) {
+		reqCtx.InstallResponseHandler(func(statusCode int, stream io.Reader, _ interface{}) (interface{}, error) {
 			if statusCode != http.StatusOK {
 				return nil, merrors.Errorf("bad status code:%d", statusCode)
 			}
@@ -256,7 +268,7 @@ func ResponseBodyDump(output io.Writer) Option {
 				return nil, err
 			}
 			return nWrite, nil
-		}
+		}, PROC)
 		return nil
 	}
 }
