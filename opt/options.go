@@ -16,7 +16,7 @@ import (
 	"os"
 )
 
-// append header
+// AddHeader append header
 func AddHeader(key string, values ...string) Option {
 	return EditRequest(func(req *http.Request) error {
 		for _, it := range values {
@@ -26,7 +26,7 @@ func AddHeader(key string, values ...string) Option {
 	})
 }
 
-// set header
+// SetHeader set header
 func SetHeader(key string, value string) Option {
 	return EditRequest(func(req *http.Request) error {
 		req.Header.Set(key, value)
@@ -34,7 +34,7 @@ func SetHeader(key string, value string) Option {
 	})
 }
 
-// assign http method, INTERNAL API WARNING!
+// HttpMethod assign http method, INTERNAL API WARNING!
 func HttpMethod(method string) Option {
 	return func(options *RequestContext) error {
 		options.Method = method
@@ -42,7 +42,7 @@ func HttpMethod(method string) Option {
 	}
 }
 
-// request's context, default: context.TODO()
+// BindContext request's context, default: context.TODO()
 func BindContext(ctx context.Context) Option {
 	return func(options *RequestContext) error {
 		options.Ctx = ctx
@@ -50,7 +50,7 @@ func BindContext(ctx context.Context) Option {
 	}
 }
 
-// expect http response code,default is 200
+// ExpectStatusCode expect http response code,default is 200
 func ExpectStatusCode(statusCodes ...int) Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
@@ -68,7 +68,7 @@ func ExpectStatusCode(statusCodes ...int) Option {
 	}
 }
 
-// custom build url
+// BuildUrl custom build url
 func BuildUrl(urlBuilderOptions ...murl.UrlBuildOption) Option {
 	return func(options *RequestContext) error {
 		curUrl := options.Url
@@ -85,7 +85,7 @@ func BuildUrl(urlBuilderOptions ...murl.UrlBuildOption) Option {
 	}
 }
 
-// request url
+// Url request url
 func Url(baseUrl string) Option {
 	return func(options *RequestContext) error {
 		options.Url = baseUrl
@@ -93,7 +93,7 @@ func Url(baseUrl string) Option {
 	}
 }
 
-// set request body
+// Body set request body
 func Body(reader io.Reader) Option {
 	return func(options *RequestContext) error {
 		options.LazyRequestBodyHandler = func() (io.Reader, error) {
@@ -103,7 +103,7 @@ func Body(reader io.Reader) Option {
 	}
 }
 
-// add some defer function after request done
+// Defer add some defer function after request done
 func Defer(cb ...func()) Option {
 	return func(options *RequestContext) error {
 		options.DeferHandlers =
@@ -112,25 +112,25 @@ func Defer(cb ...func()) Option {
 	}
 }
 
-// content type
+// ContentType content type
 func ContentType(contentType string) Option {
 	return SetHeader("Content-Type", contentType)
 }
 
-// body with json contents
+// BodyJSON body with json contents
 func BodyJSON(v interface{}) Option {
 	return CustomBody("application/json", json.Marshal, v)
 }
 
-// body with xml contents
+// BodyXML body with xml contents
 func BodyXML(v interface{}) Option {
 	return CustomBody("application/xml", xml.Marshal, v)
 }
 
-// marshal func
+// MarshalFunc marshal func
 type MarshalFunc func(interface{}) ([]byte, error)
 
-// custom body
+// CustomBody custom body
 func CustomBody(contentType string, marshalFunc MarshalFunc, v interface{}) Option {
 	return ContentType(contentType).
 		Concat(func(options *RequestContext) error {
@@ -146,24 +146,24 @@ func CustomBody(contentType string, marshalFunc MarshalFunc, v interface{}) Opti
 		})
 }
 
-// add validator0
+// Validator add validator0
 func Validator(validateIns *validator.Validate) Option {
 	return CustomValidator(validateIns.Struct)
 }
 
-// mob.Validator var
+// ValidateVar mob.Validator var
 func ValidateVar(validIns mvalidate.Validator, validateTag string) Option {
 	return CustomValidator(func(i interface{}) error {
 		return validIns.Var(i, validateTag)
 	})
 }
 
-// mob.Validator struct
+// ValidateStruct mob.Validator struct
 func ValidateStruct(validIns mvalidate.Validator) Option {
 	return CustomValidator(validIns.Struct)
 }
 
-// custom validator func
+// CustomValidator custom validator func
 func CustomValidator(validateFunc ValidateHandleFunc) Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(
@@ -183,7 +183,7 @@ func CustomValidator(validateFunc ValidateHandleFunc) Option {
 
 }
 
-// drop response body, response value is status_code
+// DropResponseBody drop response body, response value is status_code
 func DropResponseBody() Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(
@@ -194,10 +194,10 @@ func DropResponseBody() Option {
 	}
 }
 
-// unmarshal func
+// UnmarshalFunc unmarshal func
 type UnmarshalFunc func([]byte, interface{}) error
 
-// response data binder
+// DataBind response data binder
 func DataBind(unmarshal UnmarshalFunc, value interface{}) Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(func(_ int, stream io.Reader, previousValue interface{}) (interface{}, error) {
@@ -215,17 +215,17 @@ func DataBind(unmarshal UnmarshalFunc, value interface{}) Option {
 	}
 }
 
-// bind output json
+// BindJSON bind output json
 func BindJSON(value interface{}) Option {
 	return DataBind(json.Unmarshal, value)
 }
 
-// bind output xml
+// BindXML bind output xml
 func BindXML(value interface{}) Option {
 	return DataBind(xml.Unmarshal, value)
 }
 
-// edit http request
+// EditRequest edit http request
 func EditRequest(f CustomRequestHandleFunc) Option {
 	return func(requestContext *RequestContext) error {
 		requestContext.CustomHttpRequestHandlers =
@@ -234,7 +234,7 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 	}
 }
 
-// output: nWrite: int64
+// ResponseBodyToFile output: nWrite: int64
 func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	return func(reqCtx *RequestContext) error {
 		reqCtx.InstallResponseHandler(func(statusCode int, stream io.Reader, _ interface{}) (interface{}, error) {
