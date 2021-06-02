@@ -2,9 +2,11 @@ package requests
 
 import (
 	"context"
+	"github.com/guestin/go-requests/internal"
 	"github.com/guestin/go-requests/opt"
 	"github.com/guestin/mob/mio"
 	"github.com/pkg/errors"
+	"io"
 	"net/http"
 )
 
@@ -73,11 +75,17 @@ func SendRequest1(opts []opt.Option) (interface{}, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer mio.CloseIgnoreErr(httpResp.Body)
+	var bodyStream io.ReadSeekCloser
+	if len(reqParam.GetResponseHandlersAt(opt.PROC)) > 1 {
+		bodyStream = internal.NewReplayBuffer(httpResp.Body)
+	} else {
+		bodyStream = internal.NoOpSeeker(httpResp.Body)
+	}
+	defer mio.CloseIgnoreErr(bodyStream)
 	statusCode := httpResp.StatusCode
 	rspHandler := reqParam.BuildResponseHandler()
 	if rspHandler == nil {
 		return statusCode, nil
 	}
-	return rspHandler(statusCode, httpResp.Body, nil)
+	return rspHandler(statusCode, bodyStream, nil)
 }

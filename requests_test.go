@@ -29,6 +29,7 @@ func TestValidateResponse(t *testing.T) {
 		opt.BuildUrl(murl.WithPath("repos/guestin/mob/git/refs/tags")),
 		opt.ExpectStatusCode(http.StatusOK),
 		opt.BindJSON(&[]GitTag{}),
+		opt.ResponseBodyDump(os.Stdout),
 		opt.ValidateVar(validator, `required,dive,required`))
 	if err != nil {
 		t.Log(err)

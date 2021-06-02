@@ -53,7 +53,7 @@ func BindContext(ctx context.Context) Option {
 // ExpectStatusCode expect http response code,default is 200
 func ExpectStatusCode(statusCodes ...int) Option {
 	return func(options *RequestContext) error {
-		options.InstallResponseHandler(func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+		options.InstallResponseHandler(func(statusCode int, stream io.ReadSeeker, previousValue interface{}) (interface{}, error) {
 			if len(statusCodes) == 0 {
 				return nil, nil
 			}
@@ -168,7 +168,7 @@ func CustomValidator(validateFunc ValidateHandleFunc) Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(
 			func(statusCode int,
-				stream io.Reader,
+				stream io.ReadSeeker,
 				previousValue interface{}) (interface{}, error) {
 				if previousValue == nil {
 					return nil, nil
@@ -187,7 +187,7 @@ func CustomValidator(validateFunc ValidateHandleFunc) Option {
 func DropResponseBody() Option {
 	return func(options *RequestContext) error {
 		options.InstallResponseHandler(
-			func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+			func(statusCode int, stream io.ReadSeeker, previousValue interface{}) (interface{}, error) {
 				return statusCode, nil
 			}, PROC)
 		return nil
@@ -200,7 +200,7 @@ type UnmarshalFunc func([]byte, interface{}) error
 // DataBind response data binder
 func DataBind(unmarshal UnmarshalFunc, value interface{}) Option {
 	return func(options *RequestContext) error {
-		options.InstallResponseHandler(func(_ int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+		options.InstallResponseHandler(func(_ int, stream io.ReadSeeker, previousValue interface{}) (interface{}, error) {
 			dataBytes, err := io.ReadAll(stream)
 			if err != nil {
 				return nil, errors.Wrap(err, "read response stream failed")
@@ -237,7 +237,7 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 // ResponseBodyToFile output: nWrite: int64
 func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	return func(reqCtx *RequestContext) error {
-		reqCtx.InstallResponseHandler(func(statusCode int, stream io.Reader, _ interface{}) (interface{}, error) {
+		reqCtx.InstallResponseHandler(func(statusCode int, stream io.ReadSeeker, _ interface{}) (interface{}, error) {
 			if statusCode != http.StatusOK {
 				return nil, merrors.Errorf("bad status code:%d", statusCode)
 			}
@@ -256,18 +256,18 @@ func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	}
 }
 
-// output: nWrite: int64
+// ResponseBodyDump output: nWrite: int64
 func ResponseBodyDump(output io.Writer) Option {
 	return func(reqCtx *RequestContext) error {
-		reqCtx.InstallResponseHandler(func(statusCode int, stream io.Reader, _ interface{}) (interface{}, error) {
+		reqCtx.InstallResponseHandler(func(statusCode int, stream io.ReadSeeker, objectValue interface{}) (interface{}, error) {
 			if statusCode != http.StatusOK {
 				return nil, merrors.Errorf("bad status code:%d", statusCode)
 			}
-			nWrite, err := io.Copy(output, stream)
+			_, err := io.Copy(output, stream)
 			if err != nil {
 				return nil, err
 			}
-			return nWrite, nil
+			return objectValue, nil
 		}, PROC)
 		return nil
 	}

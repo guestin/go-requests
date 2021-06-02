@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type ChainResponseHandleFunc func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error)
+type ChainResponseHandleFunc func(statusCode int, stream io.ReadSeeker, previousValue interface{}) (interface{}, error)
 type ChainedResponseHandler func(next ChainResponseHandleFunc) ChainResponseHandleFunc
 
 type ValidateHandleFunc func(interface{}) error
@@ -32,6 +32,10 @@ const (
 	TAIL InstallPosition = 2
 )
 
+func (this *RequestContext) GetResponseHandlersAt(pos InstallPosition) []ChainedResponseHandler {
+	return this.responseHandlers[pos]
+}
+
 func (this *RequestContext) BuildResponseHandler() ChainResponseHandleFunc {
 	var chainedHandlers []ChainedResponseHandler
 	for _, it := range this.responseHandlers {
@@ -50,7 +54,11 @@ func (this *RequestContext) BuildResponseHandler() ChainResponseHandleFunc {
 
 func (this *RequestContext) InstallResponseHandler(f ChainResponseHandleFunc, pos InstallPosition) {
 	responseHandler := func(next ChainResponseHandleFunc) ChainResponseHandleFunc {
-		return func(statusCode int, stream io.Reader, previousValue interface{}) (interface{}, error) {
+		return func(statusCode int, stream io.ReadSeeker, previousValue interface{}) (interface{}, error) {
+			defer func() {
+				// seek back to start
+				_, _ = stream.Seek(0, io.SeekStart)
+			}()
 			v, err := f(statusCode, stream, previousValue)
 			if err != nil {
 				return nil, err
