@@ -12,11 +12,16 @@ import (
 )
 
 func TestGet(t *testing.T) {
+	arr := &[]struct {
+		Ref string `json:"ref"`
+		Url string `json:"url"`
+	}{}
 	data, err := Get(context.TODO(),
 		"https://api.github.com",
 		opt.BuildUrl(murl.WithPath("repos/guestin/mob/git/refs/tags")),
 		opt.ExpectStatusCode(http.StatusOK),
-		opt.ResponseBodyDump(os.Stdout))
+		opt.ResponseBodyDump(os.Stdout),
+		opt.BindJSON(arr))
 	assert.NoError(t, err)
 	t.Log(data)
 }

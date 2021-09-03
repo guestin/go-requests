@@ -31,14 +31,14 @@ func (this *ReplayBuffer) Read(p []byte) (int, error) {
 	}
 	if this.rawReadError == nil {
 		n, err := this.raw.Read(p)
-		if err == nil {
+		eofFlag := isEOF(err)
+		if err == nil || eofFlag {
 			_, _ = this.ReadWriteSeekClose.Write(p[:n])
-		} else {
-			if isEOF(err) {
+			if eofFlag {
 				this.eofReach = true
-			} else {
-				this.rawReadError = err
 			}
+		} else {
+			this.rawReadError = err
 		}
 		return n, err
 	}
@@ -82,7 +82,7 @@ func (this *SimpleBuffer) Read(p []byte) (int, error) {
 		return 0, io.EOF
 	}
 	expectN := mio.MinInt(bufLen, len(p))
-	copy(p, this.data[this.rIdx:expectN])
+	copy(p, this.data[this.rIdx:this.rIdx+expectN])
 	this.rIdx += expectN
 	return expectN, nil
 }
