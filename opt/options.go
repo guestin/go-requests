@@ -263,7 +263,12 @@ func ResponseBodyDump(output io.Writer) Option {
 			if statusCode != http.StatusOK {
 				return nil, merrors.Errorf("bad status code:%d", statusCode)
 			}
+			seek0 := func() {
+				_, _ = stream.Seek(0, io.SeekStart)
+			}
+			seek0()
 			_, err := io.Copy(output, stream)
+			defer seek0()
 			if err != nil {
 				return nil, err
 			}
