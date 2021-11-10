@@ -22,6 +22,8 @@ type RequestContext struct {
 	responseHandlers          [3][]ChainedResponseHandler // chained handlers
 	CustomHttpRequestHandlers []CustomRequestHandleFunc   // after request build
 	DeferHandlers             []func()                    // after request executed
+	CurrentRequest            *http.Request               // current http request
+	CurrentResponse           *http.Response              // current http response
 }
 
 type InstallPosition int

@@ -39,7 +39,7 @@ func easyWrap(ctx context.Context, method, url string, opts ...opt.Option) (inte
 	return SendRequest1(opts)
 }
 
-var defaultRequestParams = opt.RequestContext{
+var defaultRequestContext = opt.RequestContext{
 	Ctx:           context.TODO(),
 	ExecuteClient: http.DefaultClient,
 	Method:        http.MethodGet,
@@ -53,37 +53,39 @@ func SendRequest(opts ...opt.Option) (interface{}, error) {
 
 func SendRequest1(opts []opt.Option) (interface{}, error) {
 	var err error
-	reqParam := defaultRequestParams
+	reqCtx := defaultRequestContext
 	for _, itOpt := range opts {
-		if err = itOpt(&reqParam); err != nil {
+		if err = itOpt(&reqCtx); err != nil {
 			return nil, errors.Wrap(err, "build request failed")
 		}
 	}
-	httpRequest, err := reqParam.BuildRequest()
+	httpRequest, err := reqCtx.BuildRequest()
 	if err != nil {
 		return nil, err
 	}
-	if reqParam.ExecuteClient == nil {
+	reqCtx.CurrentRequest = httpRequest
+	if reqCtx.ExecuteClient == nil {
 		return nil, ErrNoExecuteClient
 	}
 	defer func() {
-		for _, deferFunc := range reqParam.DeferHandlers {
+		for _, deferFunc := range reqCtx.DeferHandlers {
 			deferFunc()
 		}
 	}()
-	httpResp, err := reqParam.ExecuteClient.Do(httpRequest)
+	httpResp, err := reqCtx.ExecuteClient.Do(httpRequest)
 	if err != nil {
 		return nil, err
 	}
+	reqCtx.CurrentResponse = httpResp
 	var bodyStream io.ReadSeekCloser
-	if len(reqParam.GetResponseHandlersAt(opt.PROC)) > 1 {
+	if len(reqCtx.GetResponseHandlersAt(opt.PROC)) > 1 {
 		bodyStream = internal.NewReplayBuffer(httpResp.Body)
 	} else {
 		bodyStream = internal.NoOpSeeker(httpResp.Body)
 	}
 	defer mio.CloseIgnoreErr(bodyStream)
 	statusCode := httpResp.StatusCode
-	rspHandler := reqParam.BuildResponseHandler()
+	rspHandler := reqCtx.BuildResponseHandler()
 	if rspHandler == nil {
 		return statusCode, nil
 	}
