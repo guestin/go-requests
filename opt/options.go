@@ -5,8 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"github.com/go-playground/validator/v10"
-	"github.com/guestin/mob/merrors"
 	"github.com/guestin/mob/mio"
 	"github.com/guestin/mob/murl"
 	"github.com/guestin/mob/mvalidate"
@@ -238,9 +238,6 @@ func EditRequest(f CustomRequestHandleFunc) Option {
 func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 	return func(reqCtx *RequestContext) error {
 		reqCtx.InstallResponseHandler(func(statusCode int, stream io.ReadSeeker, _ interface{}) (interface{}, error) {
-			if statusCode != http.StatusOK {
-				return nil, merrors.Errorf("bad status code:%d", statusCode)
-			}
 			output, err := os.OpenFile(fileName, flag, perm)
 			if err != nil {
 				return nil, err
@@ -260,11 +257,15 @@ func ResponseBodyToFile(fileName string, flag int, perm os.FileMode) Option {
 func ResponseBodyDump(output io.Writer) Option {
 	return func(reqCtx *RequestContext) error {
 		reqCtx.InstallResponseHandler(func(statusCode int, stream io.ReadSeeker, objectValue interface{}) (interface{}, error) {
-			if statusCode != http.StatusOK {
-				return nil, merrors.Errorf("bad status code:%d", statusCode)
+			if _, err := fmt.Fprintf(output, "===\nstatus code:%d\n", statusCode); err != nil {
+				return nil, err
 			}
-			_, err := io.Copy(output, stream)
-			if err != nil {
+			//
+			if _, err := io.Copy(output, stream); err != nil {
+				return nil, err
+			}
+			//
+			if _, err := fmt.Fprintln(output, "==="); err != nil {
 				return nil, err
 			}
 			return objectValue, nil
