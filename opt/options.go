@@ -225,6 +225,16 @@ func BindXML(value interface{}) Option {
 	return DataBind(xml.Unmarshal, value)
 }
 
+// BindString bind body to string
+func BindString(str *string) Option {
+	return DataBind(func(data []byte, i interface{}) error {
+		if s, ok := i.(*string); ok && s != nil {
+			*s = string(data)
+		}
+		return nil
+	}, str)
+}
+
 // EditRequest edit http request
 func EditRequest(f CustomRequestHandleFunc) Option {
 	return func(requestContext *RequestContext) error {
